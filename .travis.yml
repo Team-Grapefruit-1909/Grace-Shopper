@@ -1,27 +1,43 @@
 language: node_js
 node_js:
-  - node # uses most recent stable node version
+- node
 services:
-  - postgresql # starts up postgres
+- postgresql
 addons:
-  postgresql: '10' # recent postgres version on Travis
-dist: xenial # uses xenial environment
+  postgresql: '10'
+cache:
+  # cache both npm modules and Cypress binary
+  directories:
+    - ~/.npm
+    - ~/.cache
+  override:
+    - npm ci
+    - npm run cy:verify
+    - npm run cy:info
+dist: xenial
+env:
+  - NODE_ENV='test'
 notifications:
   email:
-    on_success: change # default: change (only when going from broken to fixed)
-    on_failure: always # default: always (which is annoying, as it should be)
+    on_success: change
+    on_failure: always
 install:
-  - npm ci # faster, goes only from package-lock
+- npm ci
 before_script:
-  - psql -c 'create database "grace-shopper-test";' -U postgres # remember to change this name if you change it elsewhere (e.g. package.json)
+- psql -c 'create database "grace-shopper-test";' -U postgres
+- npm run seed
+- npm run build-client
 script:
-  - npm test             # test the code
-  - npm run build-client # make the bundle
+  - npm run start &
+  - npm run cy:run -- --record --key 58bbbb4b-1619-4eeb-8352-0a100489ad7c
+  # after all tests finish running we need
+  # to kill all background jobs (like "npm start &")
+  - kill $(jobs -p) || true
 before_deploy:
-  - rm -rf node_modules # omit from the tarball, since we skip cleanup
+- rm -rf node_modules
 deploy:
-  skip_cleanup: true # prevents travis from deleting the build
+  skip_cleanup: true
   provider: heroku
-  app: grapefruitshopper # see README
+  app: gc-test99
   api_key:
     secure: Z9Czzqhq/pORWIgya1vIjMkz5rzrMm/iZJb+HYOSPBOgPskl7FlGK/rFVjdk81yKmIgdVbUPvFokM2jCoF9sur2ssUHsJngIM7cbJH4r81db7vMF4QRkxZnrWN5dnVEgMMh6VoKRQAarDmgFz/+YrMZZN0xOKav2xUarfAhKBapOdAmqgIvdkQ4S/fbRLlUmj8pjhb/3+8nzt6rESpzuwexOMqIQSAtry/DENjbMVs02CysRXOar5gz/4DcNuy1neKz6mzlqOldYr4k20Ctdcm6Ubk+UXHMUUr+InMQv7DPtUfl1es3b1Wd/X4b6AOIjIWv59+2iWR8UR0A5Ah5Mf+BYyNaINP1mNrSFDiNLI8apHhU1CWEUnvH4Mcb9yp9LBkL64Ngrv4CtOxtqWPL29K4rKE+RpDpxgoqQZWJZjRLyfapbM++/F+X6APxyK45eoxRBy1+OYpE6MfuXyww9a0m2+/vj+35Rh3hdctWYJv9z5q1qCAci4Pd2qRUJ2N/Y/WtW63R59OO6/Sy4xT3xwVTAQ80K3GBjVfCxq3QpXZtkDLEngzN+PItobFZMZehvBFiKMTDqAlpagrVDGoJZyO+FSKUtzLMfau3e9ENSGWY4Iw671mwNXQ0DfYXRRdLtYDPJi+F3WFmFCM/MtyPTC0ZRCTeDyE1VlVv19XnJBfo=
