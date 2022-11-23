@@ -79,7 +79,7 @@
     "semantic-ui-react": "^0.88.1",
     "sequelize": "^5.15.1",
     "serialize-javascript": "^2.1.2",
-    "socket.io": "^2.2.0",
+    "socket.io": "^2.5.0",
     "stripe": "^7.13.0",
     "use-query-params": "^0.4.5"
   },
